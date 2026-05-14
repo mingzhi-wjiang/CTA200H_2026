@@ -86,12 +86,31 @@ you may need to wait briefly or switch to another option.
 
 ---
 
-### Option C — OpenAI Codex CLI
+### Option C — OpenAI Codex
 
-OpenAI's terminal-based agentic coding tool, similar in spirit to Claude Code.
+OpenAI's agentic coding tool, available in two forms: a **VS Code extension** with a
+side-by-side chat and agent panel (similar to GitHub Copilot and Claude), and a
+**command-line tool** for terminal-based use. Both connect to the same underlying model.
 
-**Requirements:** Node.js installed and an OpenAI account ([platform.openai.com](https://platform.openai.com)).
+**Requirements:** an OpenAI account ([platform.openai.com](https://platform.openai.com)).
 New accounts receive free credits; after that, usage is pay-as-you-go.
+
+#### Option C1 — Codex in VS Code (side-by-side panel, recommended)
+
+1. In VS Code, open the Extensions panel (`Ctrl+Shift+X` / `Cmd+Shift+X`)
+2. Search for **OpenAI Codex** (or **ChatGPT**) and install the official OpenAI extension
+3. Sign in with your OpenAI account when prompted
+4. Open the Codex panel from the sidebar — you get a chat interface where you can
+   ask questions, request code edits, and run agentic tasks directly alongside your files,
+   without leaving VS Code
+
+**Verify:** open the panel, type `explain what a FITS file is` and confirm you get a response.
+To use it agentically, describe a multi-step task (e.g. *"open this notebook and add a cell
+that plots the first column of the table"*) and observe it plan and execute the steps.
+
+#### Option C2 — Codex CLI (terminal-based)
+
+**Requirements:** Node.js installed ([nodejs.org](https://nodejs.org), LTS version).
 
 ```bash
 # Install Codex CLI globally
@@ -168,3 +187,109 @@ for any single recommendation to stay current. What matters for this lecture is 
 you have *something* working so you can participate in the exercises.
 In practice, you will likely settle on one tool that fits your workflow,
 and it may well be different from what a colleague uses — that is fine.
+
+---
+
+## Optional: Running VS Code Remotely on a CITA Server
+
+VS Code's **Remote — SSH** extension lets you edit files and run terminals on a remote
+machine (like `lobster`) as if you were working locally. This is the recommended setup
+when your analysis requires the compute power, memory, or data storage available on
+CITA servers — your agentic tool sees the remote files directly and can read, edit,
+and run them without any data transfer.
+
+### 1 — Prerequisites: SSH client
+
+You need a working SSH client before VS Code can connect.
+
+**macOS / Linux:** SSH is built in. Open a terminal and confirm with `ssh -V`.
+No additional installation is needed.
+
+**Windows:** SSH is included in Windows 10 (build 1809) and later.
+Open **PowerShell** or **Windows Terminal** and confirm with `ssh -V`.
+If the command is not found, go to *Settings → Apps → Optional Features* and install
+**OpenSSH Client**. Alternatively, install [Git for Windows](https://gitforwindows.org),
+which bundles an SSH client and a Git Bash terminal that VS Code can use.
+
+### 2 — Install the Remote — SSH extension
+
+In VS Code open the Extensions panel (`Ctrl+Shift+X` / `Cmd+Shift+X`) and search for
+**Remote - SSH** (by Microsoft). Install it. You will also want
+**Remote - SSH: Editing Configuration Files** if it is not bundled automatically.
+
+### 3 — Connect via CITA VPN (recommended)
+
+The simplest setup uses the CITA VPN, which lets you reach any CITA machine directly
+without going through the gateway. Once the VPN is active, add the following to your
+SSH config file:
+
+| Platform | SSH config path |
+|----------|----------------|
+| macOS / Linux | `~/.ssh/config` |
+| Windows | `C:\Users\YOUR_WINDOWS_USERNAME\.ssh\config` |
+
+Create the file (and the `.ssh` folder) if it does not exist, then add:
+
+```
+Host lobster
+    HostName lobster.cita.utoronto.ca
+    User YOUR_CITA_USERNAME
+```
+
+See [wiki.cita.utoronto.ca](http://wiki.cita.utoronto.ca/index.php/CITA_Remote_Access)
+for VPN setup instructions.
+
+### 4 — Alternative: jump through the gateway (no VPN)
+
+If you prefer not to use the VPN, you can route through the gateway
+`gw.cita.utoronto.ca` using a jump host. The gateway requires your password and a
+GAuth two-factor code. Add both stanzas to your SSH config file:
+
+```
+# CITA gateway — used as a jump host
+Host cita-gw
+    HostName gw.cita.utoronto.ca
+    User YOUR_CITA_USERNAME
+
+# lobster via the gateway
+Host lobster
+    HostName lobster.cita.utoronto.ca
+    User YOUR_CITA_USERNAME
+    ProxyJump cita-gw
+```
+
+When VS Code connects it will prompt for your password and GAuth code in the
+integrated terminal.
+
+> **Windows note:** `ProxyJump` requires OpenSSH ≥ 7.3.
+> Run `ssh -V` in PowerShell to check. If your version is older, update OpenSSH
+> via *Optional Features* or switch to the Git for Windows SSH client
+> (set `"remote.SSH.path"` in VS Code settings to point to `C:\Program Files\Git\usr\bin\ssh.exe`).
+
+### 5 — Connect from VS Code
+
+The steps are identical on all platforms:
+
+1. Click the blue `><` icon in the bottom-left corner of VS Code
+   (or press `F1` → *Remote-SSH: Connect to Host*)
+2. Select **lobster** from the list (or type it if it does not appear yet)
+3. VS Code opens a new window — the terminal, file explorer, and extensions all
+   operate on the remote machine
+4. Open your working directory via `File → Open Folder`
+
+### 6 — Using agentic tools on the remote machine
+
+Once connected, all agentic tools run on `lobster` regardless of your local OS.
+
+**Terminal-based tools (Claude Code, Codex CLI):** the VS Code integrated terminal
+is a shell on `lobster`. Run `claude` or `codex` from there as you would locally.
+Node.js must be available on the server — check with `which node` or load it via
+`module load nodejs` (or the appropriate module name).
+
+**Panel-based tools (GitHub Copilot, Cline, Codex VS Code extension):** while
+connected via Remote SSH, open the Extensions panel and VS Code will offer to
+install the extension on the remote host. They run server-side and work
+transparently alongside your remote files.
+
+> **Tip:** other CITA servers (`homard`, `kingcrab`, `mussel`, `cosmo1`–`cosmo4`)
+> work identically — just replace `lobster` with the server name in your SSH config.
